@@ -1,0 +1,29 @@
+name: refresh pubs
+
+on:
+  push:
+    branches:
+      - main  # Trigger the workflow only when changes are pushed to the main branch
+
+jobs:
+  getdataandrefreshmap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo content
+        uses: actions/checkout@v3 # Checkout the repository content to GitHub runner.
+      - name: setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8 # Install the Python version needed
+      - name: Install dependencies
+        run: |
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: execute py script
+        run: |
+          python bib_to_html.py
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "update pubs"
+          git push
+
