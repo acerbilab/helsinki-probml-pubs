@@ -42,7 +42,9 @@ def parse_bib_file(bib_file):
     return parsed_entries
 
 
-def convert_bib_to_html(bib_file, venue_code, output_file="publications.html"):
+def convert_bib_to_html(
+    bib_file, venue_code, output_file="publications.html", max_year=2020
+):
     """Convert a .bib file to an HTML file grouped by year."""
     bib_data = parse_bib_file(bib_file)
 
@@ -69,7 +71,7 @@ def convert_bib_to_html(bib_file, venue_code, output_file="publications.html"):
         publications_by_year.setdefault(year, []).append(entry)
 
     for year in sorted(publications_by_year.keys(), reverse=True):
-        if publications_by_year[year]:
+        if publications_by_year[year] and int(year) >= max_year:
             per_year_content = ""
             for entry in publications_by_year[year]:
                 authors = entry.get("author", "Unknown Author").replace(" and ", ", ")
@@ -79,19 +81,47 @@ def convert_bib_to_html(bib_file, venue_code, output_file="publications.html"):
                 )
                 full_venue_name = entry.get("journal", venue_name)
                 date = f"{entry.get('month', '')} {entry.get('year', '')}".strip()
-                arxiv_link = entry.get("arxiv", "#")
+                arxiv_link = entry.get("arxiv", None)
+                code_link = entry.get("code", None)
                 code = venue_code.get(venue_name, "skip")
 
                 if code != "skip":
                     per_year_content += (
                         f"<div style='margin-bottom: 5px;'>\n"
                         f"    <code>[{code}]</code><strong>&nbsp; {title}</strong><br>\n"
-                        f"    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; {format_authors(authors)}<br>\n"
+                        f"    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; {authors}<br>\n"
                         f"    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <em>{full_venue_name} {date}</em><br>\n"
-                        f"    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a href='{arxiv_link}' target='_blank'>[ARXIV]</a>\n"
-                        f"    <a href='#{entry['ID']}'>[BIB]</a>\n"
-                        f"</div>\n"
                     )
+
+                    first_item = True
+
+                    if arxiv_link:
+                        if first_item:
+                            per_year_content += (
+                                "&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;"
+                            )
+                        else:
+                            per_year_content += " | "
+                        per_year_content += (
+                            f"<a href='{arxiv_link}' target='_blank'>ARXIV</a>\n"
+                        )
+                        first_item = False
+
+                    if code_link:
+                        if first_item:
+                            per_year_content += (
+                                "&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;"
+                            )
+                        else:
+                            per_year_content += " | "
+                        per_year_content += (
+                            f"    <a href='{code_link}' target='_blank'>CODE</a>\n"
+                        )
+                        first_item = False
+
+                    per_year_content += "</div>\n"
+
+                    # breakpoint()
 
             if per_year_content != "":
                 html_content += (
