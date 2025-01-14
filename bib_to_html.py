@@ -1,5 +1,6 @@
 import re
 import yaml
+from pylatexenc.latex2text import LatexNodes2Text
 
 
 def parse_bib_file(bib_file):
@@ -42,6 +43,34 @@ def parse_bib_file(bib_file):
     return parsed_entries
 
 
+def format_authors(entry):
+    authors = entry.get("author", "Unknown Author")
+    
+    # Ensure authors is a string
+    if not isinstance(authors, str):
+        raise ValueError("The 'author' field must be a string.")
+    
+    # Decode LaTeX-style escape sequences to Unicode
+    authors = LatexNodes2Text().latex_to_text(authors)
+    
+    authors_list = authors.split(" and ")  # Split the authors
+    formatted_authors = []
+    
+    for author in authors_list:
+        parts = author.split(", ")
+        if len(parts) == 2:
+            last_name, first_names = parts
+            first_initials = "".join(f"{name.strip()[0]} " for name in first_names.split() if name.strip())
+            # Keep the last name as is to preserve special characters
+            formatted_name = f"{last_name.strip()} {first_initials.strip()}"
+            formatted_authors.append(formatted_name)
+        else:
+            # If the author name doesn't fit the expected "Last, First" format, keep it as is
+            formatted_authors.append(author.strip())
+    
+    return ", ".join(formatted_authors)
+
+
 def convert_bib_to_html(
     bib_file, venue_code, output_file="publications.html", max_year=2020
 ):
@@ -74,7 +103,7 @@ def convert_bib_to_html(
         if publications_by_year[year] and int(year) >= max_year:
             per_year_content = ""
             for entry in publications_by_year[year]:
-                authors = entry.get("author", "Unknown Author").replace(" and ", ", ")
+                authors = format_authors(entry)
                 title = entry.get("title", "Untitled")
                 venue_name = entry.get(
                     "booktitle", entry.get("journal", "Unknown Venue")
@@ -137,22 +166,7 @@ def convert_bib_to_html(
     print(f"HTML publication list saved to {output_file}")
 
 
-def format_authors(authors, max_length=100):
-    words = authors.split(", ")  # Split authors by commas
-    current_line = ""
-    formatted_lines = []
 
-    for word in words:
-        if len(current_line) + len(word) + 2 <= max_length:  # +2 for the ", " separator
-            current_line += (", " if current_line else "") + word
-        else:
-            formatted_lines.append(current_line)
-            current_line = word
-    if current_line:
-        formatted_lines.append(current_line)
-
-    # Add &nbsp; indentation for subsequent lines
-    return "<br>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; ".join(formatted_lines)
 
 
 if __name__ == "__main__":
