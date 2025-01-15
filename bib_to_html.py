@@ -112,6 +112,7 @@ def convert_bib_to_html(
                 date = f"{entry.get('month', '')} {entry.get('year', '')}".strip()
                 arxiv_link = entry.get("arxiv", None)
                 code_link = entry.get("code", None)
+                paper_link = entry.get("url", None)
                 code = venue_code.get(venue_name, "skip")
 
                 vc = list(venue_code.values())
@@ -131,6 +132,17 @@ def convert_bib_to_html(
                     )
 
                     first_item = True
+                    if paper_link:
+                        if first_item:
+                            per_year_content += (
+                                spaces+ "&nbsp;"
+                            )
+                        else:
+                            per_year_content += " | "
+                        per_year_content += (
+                            f"<a href='{paper_link}' target='_blank'>LINK</a>\n"
+                        )
+                        first_item = False
 
                     if arxiv_link:
                         if first_item:
