@@ -114,12 +114,20 @@ def convert_bib_to_html(
                 code_link = entry.get("code", None)
                 code = venue_code.get(venue_name, "skip")
 
+                vc = list(venue_code.values())
+                max_code_len = len(max(vc,key=len))
+                spaces = "&nbsp;" *(((max_code_len)*3)+1)
+
                 if code != "skip":
+                    code_space="&nbsp;" * ((((max_code_len+1)-len(code))*2))
+                    if (max_code_len - len(code) > 0):
+                        code_space = code_space + "&nbsp;"
+
                     per_year_content += (
                         f"<div style='margin-bottom: 5px;'>\n"
-                        f"    <code>[{code}]</code><strong>&nbsp; {title}</strong><br>\n"
-                        f"    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; {authors}<br>\n"
-                        f"    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <em>{full_venue_name} {date}</em><br>\n"
+                        f"    <code>[{code}]</code><strong>{code_space}{title}</strong><br>\n"
+                        f"    {spaces} {authors}<br>\n"
+                        f"    {spaces} <em>{full_venue_name} {date}</em><br>\n"
                     )
 
                     first_item = True
@@ -127,7 +135,7 @@ def convert_bib_to_html(
                     if arxiv_link:
                         if first_item:
                             per_year_content += (
-                                "&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;"
+                                spaces+ "&nbsp;"
                             )
                         else:
                             per_year_content += " | "
@@ -139,7 +147,7 @@ def convert_bib_to_html(
                     if code_link:
                         if first_item:
                             per_year_content += (
-                                "&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;"
+                                spaces+ "&nbsp;"
                             )
                         else:
                             per_year_content += " | "
