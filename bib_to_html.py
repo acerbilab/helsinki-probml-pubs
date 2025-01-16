@@ -1,7 +1,15 @@
 import re
 import yaml
 from pylatexenc.latex2text import LatexNodes2Text
+import logging
+logging.basicConfig(level=logging.INFO)
 
+VENUE_CODES = [
+    "Journal", "JAIR", "JMLR", "AAAI", "AISTATS", "ICLR", "The Web Conference", "ICRA", "COLT",
+    "CVPR", "ICML", "IJCAI", "ACL", "UAI", "KDD", "ECCV", "ICCV",
+    "EMNLP", "CoRL", "NeurIPS"
+]
+VENUE_CODES.reverse()
 
 def parse_bib_file(bib_file):
     """Parse a .bib file into structured data."""
@@ -72,27 +80,27 @@ def format_authors(entry):
 
 
 def convert_bib_to_html(
-    bib_file, venue_code, output_file="publications.html", max_year=2020
+    bib_file, venue_code_dict, output_file="publications.html", max_year=2020
 ):
     """Convert a .bib file to an HTML file grouped by year."""
     bib_data = parse_bib_file(bib_file)
 
     html_content = """<!DOCTYPE html>
-<html>
-<head>
-    <title>Publications</title>
-    <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; }
-        h1 { text-align: left; }
-        .tag { background-color: #4285f4; color: white; padding: 4px 8px; border-radius: 4px; }
-        .title { font-weight: bold; }
-        .authors, .venue, .links { margin-left: 40px; }
-        .venue { font-style: italic; }
-        .links a { margin-right: 10px; text-decoration: none; color: blue; }
-    </style>
-</head>
-<body>
-"""
+                    <html>
+                    <head>
+                        <title>Publications</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; line-height: 1.6; }
+                            h1 { text-align: left; }
+                            .tag { background-color: #4285f4; color: white; padding: 4px 8px; border-radius: 4px; }
+                            .title { font-weight: bold; }
+                            .authors, .venue, .links { margin-left: 40px; }
+                            .venue { font-style: italic; }
+                            .links a { margin-right: 10px; text-decoration: none; color: blue; }
+                        </style>
+                    </head>
+                    <body>
+                   """
 
     publications_by_year = {}
     for entry in bib_data:
@@ -100,35 +108,49 @@ def convert_bib_to_html(
         publications_by_year.setdefault(year, []).append(entry)
 
     for year in sorted(publications_by_year.keys(), reverse=True):
+
         if publications_by_year[year] and int(year) >= max_year:
             per_year_content = ""
+
             for entry in publications_by_year[year]:
-                authors = format_authors(entry)
-                title = entry.get("title", "Untitled")
                 venue_name = entry.get(
                     "booktitle", entry.get("journal", "Unknown Venue")
                 )
-                full_venue_name = entry.get("journal", venue_name)
+                entry["venue_name"] = venue_name
+                entry["venue_code"] = venue_code_dict.get(venue_name, "skip")
+
+            # A mapping from venue names to their order
+            venue_order = {venue: index for index, venue in enumerate(VENUE_CODES)}
+
+            # Sort the list of dictionaries
+            publications_by_year[year].sort(key=lambda x: venue_order.get(x["venue_code"], float("inf")))
+            #breakpoint()
+            current_venue = None
+            for entry in publications_by_year[year]:
+                authors = format_authors(entry)
+                title = entry.get("title", "Untitled")
+                full_venue_name = entry.get("journal", entry["venue_name"])
                 date = f"{entry.get('month', '')} {entry.get('year', '')}".strip()
                 arxiv_link = entry.get("arxiv", None)
                 code_link = entry.get("code", None)
                 paper_link = entry.get("url", None)
-                code = venue_code.get(venue_name, "skip")
+                venue_code = entry["venue_code"] 
 
-                vc = list(venue_code.values())
+                vc = list(venue_code_dict.values())
                 max_code_len = len(max(vc,key=len))
                 spaces = "&nbsp;" *(((max_code_len)*3)+1)
 
-                if code != "skip":
-                    code_space="&nbsp;" * ((((max_code_len+1)-len(code))*2))
-                    if (max_code_len - len(code) > 0):
+                if venue_code != "skip":
+
+                    code_space="&nbsp;" * ((((max_code_len+1)-len(venue_code))*2))
+                    if (max_code_len - len(venue_code) > 0):
                         code_space = code_space + "&nbsp;"
 
                     per_year_content += (
                         f"<div style='margin-bottom: 5px;'>\n"
-                        f"    <code>[{code}]</code><strong>{code_space}{title}</strong><br>\n"
+                        f"    <code>[{venue_code}]</code><strong>{code_space}{title}</strong><br>\n"
                         f"    {spaces} {authors}<br>\n"
-                        f"    {spaces} <em>{full_venue_name} {date}</em><br>\n"
+                        f"    {spaces} <em>{full_venue_name}</em> {date}<br>\n"
                     )
 
                     first_item = True
@@ -172,6 +194,9 @@ def convert_bib_to_html(
 
                     # breakpoint()
 
+                else:
+                    logging.warning(f"skipped {full_venue_name} - {title} - {authors} \n")
+
             if per_year_content != "":
                 html_content += (
                     f"<div style='margin-bottom: 10px;'> <h2>{year}</h2></div>\n"
@@ -183,7 +208,7 @@ def convert_bib_to_html(
     with open(output_file, "w") as file:
         file.write(html_content)
 
-    print(f"HTML publication list saved to {output_file}")
+    logging.info(f"HTML publication list saved to {output_file}")
 
 
 
@@ -191,6 +216,6 @@ def convert_bib_to_html(
 
 if __name__ == "__main__":
     with open("venue_code.yaml", "r") as file:
-        venue_code = yaml.safe_load(file)
+        venue_code_dict = yaml.safe_load(file)
 
-    convert_bib_to_html("all_publications.bib", venue_code)
+    convert_bib_to_html("all_publications.bib", venue_code_dict)
