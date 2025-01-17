@@ -5,7 +5,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-MAX_CHARS_LINE = 90
+MAX_CHARS_LINE = 100
 VENUE_CODES = [
     "Journal",
     "JAIR",
