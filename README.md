@@ -1,6 +1,6 @@
 # Helsinki ProbML Lab Publications Page Automation
 
-This repository automates the generation of the HTML for the [Helsinki Probabilistic Machine Learning Lab](https://www.helsinki.fi/en/researchgroups/probabilistic-machine-learning) publications page, which features a list of selected publications. The lab encompasses seven research groups at the Department of Computer Science of the University of Helsinki, all specializing in probabilistic machine learning methods and their applications.
+This repository automates the generation of the HTML for the [Helsinki Probabilistic Machine Learning Lab](https://www.helsinki.fi/en/researchgroups/probabilistic-machine-learning) publications page, which features a list of selected publications. The lab encompasses multiple research groups at the Department of Computer Science of the University of Helsinki, all specializing in probabilistic machine learning methods and their applications.
 
 ## Steps
 
